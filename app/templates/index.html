@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>多平台电商账单对账 | 隐私优先</title>
+  <style>
+    :root {
+      --primary: #c2410c; --primary-hover: #ea580c;
+      --bg: #fff7ed; --card: #fff; --text: #7c2d12;
+      --muted: #9a3412; --border: #fed7aa; --danger: #dc2626; --ok: #059669;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh;
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+    header { text-align: center; margin-bottom: 24px; }
+    h1 { font-size: 1.65rem; }
+    .badge {
+      display: inline-block; background: #ffedd5; color: var(--primary);
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; margin-left: 6px;
+    }
+    .sub { color: var(--muted); font-size: 0.92rem; margin-top: 8px; }
+    .hint { color: var(--muted); font-size: 0.8rem; margin-top: 6px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 22px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    .dropzone {
+      border: 2px dashed #fdba74; border-radius: 10px; padding: 36px 14px;
+      text-align: center; cursor: pointer; background: #fff7ed; transition: .2s;
+    }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: #ffedd5; }
+    .dropzone strong { color: var(--primary); }
+    input[type=file] { display: none; }
+    .file-list { margin-top: 12px; }
+    .file-item {
+      display: flex; justify-content: space-between; padding: 8px 12px;
+      background: #fff7ed; border-radius: 8px; font-size: 0.875rem; margin-bottom: 6px;
+    }
+    .remove { color: var(--danger); cursor: pointer; font-size: 0.8rem; }
+    .btn {
+      display: block; width: 100%; padding: 14px; margin-top: 14px;
+      background: var(--primary); color: #fff; border: none; border-radius: 10px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn:disabled { background: #a8a29e; cursor: not-allowed; }
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 520px) { .features { grid-template-columns: 1fr; } }
+    .feat { background: #fff7ed; border-radius: 8px; padding: 12px; font-size: 0.85rem; }
+    .feat strong { display: block; margin-bottom: 4px; }
+    .privacy {
+      background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px;
+      padding: 14px; font-size: 0.85rem; color: #065f46;
+    }
+    .privacy a { color: var(--primary); }
+    .status { margin-top: 12px; padding: 10px; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .status.loading { display: block; background: #ffedd5; color: #9a3412; }
+    .status.error { display: block; background: #fef2f2; color: var(--danger); }
+    .status.success { display: block; background: #ecfdf5; color: var(--ok); }
+    footer { text-align: center; margin-top: 28px; color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>多平台电商账单对账 <span class="badge">隐私优先</span></h1>
+      <p class="sub">上传 2 个及以上平台/店铺账单，自动标准化并找出差异</p>
+      <p class="hint">支持淘宝/天猫、京东、拼多多、抖店等导出的 Excel/CSV；建议含订单号与金额列</p>
+    </header>
+
+    <div class="card">
+      <div class="dropzone" id="dropzone">
+        <div style="font-size:2rem;margin-bottom:8px;">🧾</div>
+        <p><strong>点击选择</strong> 或拖拽多个账单文件</p>
+        <p style="margin-top:8px;font-size:0.8rem;color:var(--muted);">
+          Excel / CSV · 单文件 ≤ {{ max_size_mb }}MB · 最多 {{ max_files }} 个
+        </p>
+        <input type="file" id="fileInput" multiple accept=".xlsx,.xls,.csv" />
+      </div>
+      <div class="file-list" id="fileList"></div>
+      <button class="btn" id="submitBtn" disabled>开始对账并下载报告</button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:1rem;margin-bottom:10px;">报告内容</h3>
+      <div class="features">
+        <div class="feat"><strong>自动识平台</strong>按文件名/表头识别淘宝京东拼多多等</div>
+        <div class="feat"><strong>订单号匹配</strong>跨文件精确对上的订单</div>
+        <div class="feat"><strong>日期+金额</strong>无订单号时的兜底匹配</div>
+        <div class="feat"><strong>仅在一边</strong>各文件独有流水分开列出</div>
+        <div class="feat"><strong>金额不一致</strong>同订单号金额对不上单独标红</div>
+        <div class="feat"><strong>汇总统计</strong>各文件总金额、差异笔数与金额</div>
+      </div>
+    </div>
+
+    <div class="privacy">
+      <strong>隐私承诺</strong><br>
+      文件仅临时处理，完成后立即删除，不落库、不训练。结果请人工复核后再用于结算。
+      <a href="/privacy">完整说明 →</a>
+    </div>
+    <footer>Ecommerce Reconcile v1.0</footer>
+  </div>
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusEl = document.getElementById('status');
+    let selected = [];
+
+    dropzone.onclick = () => fileInput.click();
+    dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add('dragover'); };
+    dropzone.ondragleave = () => dropzone.classList.remove('dragover');
+    dropzone.ondrop = e => {
+      e.preventDefault(); dropzone.classList.remove('dragover');
+      addFiles(e.dataTransfer.files);
+    };
+    fileInput.onchange = () => addFiles(fileInput.files);
+
+    function addFiles(list) {
+      const max = {{ max_files }};
+      for (const f of list) {
+        if (selected.length >= max) break;
+        if (!selected.some(x => x.name === f.name && x.size === f.size)) selected.push(f);
+      }
+      render();
+    }
+    function render() {
+      fileList.innerHTML = '';
+      selected.forEach((f, i) => {
+        const d = document.createElement('div');
+        d.className = 'file-item';
+        d.innerHTML = `<span>${f.name} (${(f.size/1024).toFixed(1)}KB)</span>
+          <span class="remove" data-i="${i}">移除</span>`;
+        fileList.appendChild(d);
+      });
+      fileList.querySelectorAll('.remove').forEach(el => {
+        el.onclick = () => { selected.splice(+el.dataset.i, 1); render(); };
+      });
+      submitBtn.disabled = selected.length < 1;
+    }
+
+    submitBtn.onclick = async () => {
+      if (!selected.length) return;
+      submitBtn.disabled = true;
+      statusEl.className = 'status loading';
+      statusEl.textContent = '正在对账，请稍候…';
+      const form = new FormData();
+      selected.forEach(f => form.append('files', f));
+      try {
+        const res = await fetch('/api/process', { method: 'POST', body: form });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || '对账失败 ' + res.status);
+        }
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = '电商账单对账报告.xlsx';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        const m = res.headers.get('X-Matched') || '?';
+        const mm = res.headers.get('X-Mismatch') || '0';
+        statusEl.className = 'status success';
+        statusEl.textContent = `完成：匹配 ${m} 组，金额不一致 ${mm} 笔。报告已下载。`;
+        selected = []; render();
+      } catch (e) {
+        statusEl.className = 'status error';
+        statusEl.textContent = e.message || '失败';
+      } finally {
+        submitBtn.disabled = selected.length < 1;
+      }
+    };
+  </script>
+</body>
+</html>
